@@ -18,6 +18,8 @@ import {TaskStatusValidationPipe} from "./pipes/task-status-validation.pipe";
 import {Task} from "./task.entity";
 import {TaskStatus} from "./task-status.enum";
 import { AuthGuard } from "@nestjs/passport";
+import { GetUser } from "../auth/get-user.decorator";
+import { User } from "../auth/user.entity";
 
 @Controller('tasks')
 @UseGuards(AuthGuard())
@@ -25,29 +27,34 @@ export class TasksController {
     constructor(private tasksService: TasksService) {}
 
     @Get('/:id')
-    getTaskById(@Param('id', ParseIntPipe) id: number) : Promise<Task> {
-        return this.tasksService.getTaskById(id);
+    getTaskById(@Param('id', ParseIntPipe) id: number, @GetUser() user: User) : Promise<Task> {
+        return this.tasksService.getTaskById(id, user);
     }
 
     @Post()
     @UsePipes(ValidationPipe)
-    createTask(@Body() createTaskDto: CreateTaskDto): Promise<Task> {
-        return this.tasksService.createTasks(createTaskDto);
+    createTask(
+      @Body() createTaskDto: CreateTaskDto,
+      @GetUser() user: User
+    ): Promise<Task> {
+        return this.tasksService.createTasks(createTaskDto, user);
     }
     @Delete('/:id')
-    deleteTask(@Param('id', ParseIntPipe) id: number) {
-        return this.tasksService.deleteTaskById(id);
+    deleteTask(@Param('id', ParseIntPipe) id: number,
+               @GetUser() user: User) {
+        return this.tasksService.deleteTaskById(id, user);
     }
 
     @Patch('/:id/status')
     updateTask(@Param('id', ParseIntPipe) id: number,
-               @Body('status', TaskStatusValidationPipe) status: TaskStatus) {
-        return this.tasksService.updateTaskById(id, status);
+               @Body('status', TaskStatusValidationPipe) status: TaskStatus,
+               @GetUser() user: User) {
+        return this.tasksService.updateTaskById(id, status, user);
     }
 
     @Get()
-    getAllTasks(@Query(ValidationPipe) filterDto: GetTaskFilterDto): Promise<Task[]> {
-        return this.tasksService.getAllTasks(filterDto);
+    getAllTasks(@Query(ValidationPipe) filterDto: GetTaskFilterDto,  @GetUser() user: User): Promise<Task[]> {
+        return this.tasksService.getAllTasks(filterDto, user);
     }
 
 }

@@ -6,6 +6,7 @@ import {Task} from "./task.entity";
 import {TaskStatus} from "./task-status.enum";
 import {DeleteResult, UpdateResult} from "typeorm";
 import {GetTaskFilterDto} from "./dto/get-task-filter.dto";
+import { User } from "../auth/user.entity";
 
 @Injectable()
 export class TasksService {
@@ -15,8 +16,8 @@ export class TasksService {
         private taskRepository: TaskRepository) {
     }
 
-    async getTaskById(id: number): Promise<Task> {
-        const found = await this.taskRepository.findOne(id);
+    async getTaskById(id: number, user: User): Promise<Task> {
+        const found = await this.taskRepository.findOne({where: {id, userId: user.id}});
 
         if (!found) {
             throw new NotFoundException(`${id} Not Found`);
@@ -25,12 +26,12 @@ export class TasksService {
         return found;
     }
 
-    createTasks(createTaskDto: CreateTaskDto): Promise<Task> {
-        return this.taskRepository.createTasks(createTaskDto);
+    createTasks(createTaskDto: CreateTaskDto, user: User): Promise<Task> {
+        return this.taskRepository.createTasks(createTaskDto, user);
     }
 
-    async deleteTaskById(id: number) : Promise<DeleteResult> {
-        let found: DeleteResult = await this.taskRepository.delete(id);
+    async deleteTaskById(id: number, user: User) : Promise<DeleteResult> {
+        let found: DeleteResult = await this.taskRepository.delete({id, userId: user.id});
 
         if (found.affected === 0) {
             throw new NotFoundException(`${id} Not Found`);
@@ -39,12 +40,17 @@ export class TasksService {
         return found;
     }
 
-    async updateTaskById(id: number, status: TaskStatus): Promise<UpdateResult> {
-        return await this.taskRepository.update(id, {status});
+    async updateTaskById(id: number, status: TaskStatus, user: User): Promise<Task> {
+        const task = await this.getTaskById(id, user);
+
+        task.status = status;
+        await task.save();
+        return task;
+
     }
 
-    async getAllTasks (filterDto: GetTaskFilterDto): Promise<Task[]> {
-        return await this.taskRepository.getTasks(filterDto);
+    async getAllTasks (filterDto: GetTaskFilterDto, user: User): Promise<Task[]> {
+        return await this.taskRepository.getTasks(filterDto, user);
     }
 
     // getAllTasksWithFilter(filterDto: GetTaskFilterDto): Tasks[] {
